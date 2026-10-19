@@ -1,4 +1,4 @@
-﻿
+
 # Black Box: incident investigation system
 
 Repository: https://github.com/RaviPratapSingh-4/blackbox

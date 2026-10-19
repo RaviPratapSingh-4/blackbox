@@ -119,8 +119,11 @@ def fact_deployment_impact(src: dict) -> list[dict]:
     else:
         statement = "No deployment is followed by a clear increase in duplicate-charge rate within 24h"
     ids = ([s["evidence_id"]] if s else []) + [d["evidence_id"] for d in stats if d is not s]
-    return [_fact("deployment_impact", statement,
-                  {"deployments": stats, "suspect": s["evidence_id"] if s else None}, ids)]
+    value = {"deployments": stats, "suspect": s["evidence_id"] if s else None}
+    if s:  # top-level copies so the LLM can cite them
+        value.update({k: s[k] for k in ("orders_before", "orders_after", "duplicates_before",
+                                        "duplicates_after", "rate_before", "rate_after")})
+    return [_fact("deployment_impact", statement, value, ids)]
 
 
 def fact_duplicates_predate_deployment(src: dict) -> list[dict]:

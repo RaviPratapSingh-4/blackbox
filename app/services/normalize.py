@@ -90,29 +90,34 @@ def detect_metric_gaps(metrics: list[dict]) -> list[dict]:
     return findings
 
 
-def detect_order_conflicts(orders: list[dict], payments: list[dict]) -> list[dict]:
-    by_order = defaultdict(list)
-    for row in orders:
-        by_order[row["order_id"]].append(row)
+def stuck_pending_orders(orders: list[dict], payments: list[dict]) -> dict[str, str]:
+    """order_id -> evidence_id of its last event, for orders still PENDING despite an old successful payment."""
+    reference = max((_ts(r["ts"]) for r in orders), default=None)
+    last = {}
+    for row in orders:  # rows arrive sorted by ts
+        last[row["order_id"]] = row
     paid_at = defaultdict(list)
     for p in payments:
         if p["status"] == "SUCCESS":
             paid_at[p["order_id"]].append(_ts(p["ts"]))
-    reference = max((_ts(r["ts"]) for r in orders), default=None)
+    return {oid: row["evidence_id"] for oid, row in last.items()
+            if row["status"] == "PENDING" and any(t < reference - STUCK_AFTER for t in paid_at.get(oid, []))}
 
-    paid_cancelled, stuck = [], []
-    for oid, events in by_order.items():
-        statuses = {e["status"] for e in events}
-        if {"PAID", "CANCELLED"} <= statuses:
-            paid_cancelled.append(events[-1]["evidence_id"])
-        if events[-1]["status"] == "PENDING" and any(t < reference - STUCK_AFTER for t in paid_at.get(oid, [])):
-            stuck.append(events[-1]["evidence_id"])
+
+def detect_order_conflicts(orders: list[dict], payments: list[dict]) -> list[dict]:
+    stuck = stuck_pending_orders(orders, payments)
+    statuses, last_event = defaultdict(set), {}
+    for row in orders:
+        statuses[row["order_id"]].add(row["status"])
+        last_event[row["order_id"]] = row["evidence_id"]
+    paid_cancelled = [last_event[oid] for oid, s in statuses.items() if {"PAID", "CANCELLED"} <= s]
 
     findings = []
     if stuck:
         findings.append(_finding("ORDER_PENDING_DESPITE_PAYMENT", "warn",
                                  f"{len(stuck)} orders are still PENDING although a successful payment exists; "
-                                 "order status is not a reliable proof of payment state", stuck, count=len(stuck)))
+                                 "order status is not a reliable proof of payment state",
+                                 list(stuck.values()), count=len(stuck)))
     if paid_cancelled:
         findings.append(_finding("ORDER_PAID_THEN_CANCELLED", "info",
                                  f"{len(paid_cancelled)} orders have both PAID and CANCELLED events; services disagree "

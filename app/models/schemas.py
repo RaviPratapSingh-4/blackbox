@@ -38,3 +38,9 @@ class LLMOutput(BaseModel):
     stated_confidence: Level  # capped by confidence.py; never trusted as is
     missing_information: list[str]
     recommended_actions: list[ProposedAction]
+    
+
+class IncidentIn(BaseModel):
+    title: str = Field(min_length=3, max_length=200)
+    description: str = Field(min_length=3, max_length=5000)
+    

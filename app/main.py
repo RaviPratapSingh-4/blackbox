@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from app.api.incidents import router
 from app.db import init_db
 
 
@@ -12,6 +13,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Black Box", lifespan=lifespan)
+app.include_router(router)
 
 
 @app.get("/health")

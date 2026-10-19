@@ -1,4 +1,4 @@
-
+﻿
 # Black Box: incident investigation system
 
 Repository: https://github.com/RaviPratapSingh-4/blackbox
@@ -17,7 +17,7 @@ python -m data.generate            # seeds the dataset and writes data/ground_tr
 uvicorn app.main:app --reload      # API docs: http://localhost:8000/docs
 ```
 
-Everything in Docker instead: `docker compose up --build` (the `.env` DATABASE_URL then points at host `db`).
+Everything in Docker instead: `docker compose up --build`. In Docker, docker-compose.yml sets DATABASE_URL to the db service (overriding the `.env` value). Then seed with `docker compose exec api python -m data.generate`.
 
 ## Environment variables
 

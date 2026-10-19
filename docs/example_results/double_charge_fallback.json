@@ -1,0 +1,90 @@
+{
+  "incident_summary": "44 of 1580 orders have 2+ successful charges (44 with different provider txn ids, i.e. separate charges rather than one replayed webhook); first duplicate charge at 2026-10-09T02:48:23.263000+00:00; extra amount charged 5883.02",
+  "findings": [
+    "44 of 1580 orders have 2+ successful charges (44 with different provider txn ids, i.e. separate charges rather than one replayed webhook); first duplicate charge at 2026-10-09T02:48:23.263000+00:00; extra amount charged 5883.02",
+    "Largest 24h duplicate-charge rate increase follows payment-service v2.14.0 at 2026-10-12T14:00:00+00:00: 1.2% (4/323 orders) -> 7.8% (24/308). Change: Reduce provider client timeout from 10s to 3s to speed up checkout",
+    "13 of 44 duplicate-charge orders started before v2.14.0 was deployed (earliest 2026-10-09T02:48:21.869000+00:00), so duplicates existed before this deployment",
+    "44 of 44 duplicate-charge orders had their retry charge sent without an idempotency key; 57 orders retried without a key and 13 of them were charged only once",
+    "Provider timeouts logged after v2.14.0 use a 3000ms limit vs 10000ms before; timeouts per 100 orders 1.86 -> 8.77",
+    "Hours with most timeouts or slowest provider: 2026-10-13T11:00 4 timeouts, 4/16 orders double charged, provider p95 2256.0 ms; 2026-10-10T09:00 3 timeouts, 0/11 orders double charged, provider p95 9000.0 ms",
+    "Provider p95 latency median 2320 ms before vs 2256 ms after v2.14.0 (23/23 points); no data for 3.0h around the deploy (2026-10-12T12:00:00+00:00 to 2026-10-12T15:00:00+00:00)",
+    "18 of 44 double-charged orders are still PENDING vs 5 of 1499 other paid orders",
+    "51 exact duplicate log lines removed (same ts, service, message, trace); affected window 2026-10-12T15:12:19+00:00 to 2026-10-12T16:46:59.526000+00:00",
+    "notification-service: 925 logs are timestamped before the payment request that caused them (median 299s early); its clock is likely wrong, so cross-service ordering involving it is unreliable",
+    "97 logs were ingested over an hour after their timestamp; recent windows may be incomplete",
+    "payment-service/provider_latency_p95_ms has no data between 2026-10-12T12:00:00+00:00 and 2026-10-12T15:00:00+00:00",
+    "payment-service/timeout_rate has no data between 2026-10-12T12:00:00+00:00 and 2026-10-12T15:00:00+00:00",
+    "23 orders are still PENDING although a successful payment exists; order status is not a reliable proof of payment state",
+    "6 orders have both PAID and CANCELLED events; services disagree on final state",
+    "1 logs rows contained instruction-like text and were quarantined",
+    "1 docs rows contained instruction-like text and were quarantined"
+  ],
+  "root_cause_hypothesis": {
+    "title": "Retries sent without an idempotency key duplicate charges (rule-based)",
+    "explanation": "All 44 duplicate-charge orders had their retry sent without an idempotency key.",
+    "likelihood": "medium",
+    "alternatives": []
+  },
+  "evidence": [
+    {
+      "ref": "retry_without_key",
+      "detail": "44 of 44 duplicate-charge orders had their retry charge sent without an idempotency key; 57 orders retried without a key and 13 of them were charged only once"
+    },
+    {
+      "ref": "duplicate_charges",
+      "detail": "44 of 1580 orders have 2+ successful charges (44 with different provider txn ids, i.e. separate charges rather than one replayed webhook); first duplicate charge at 2026-10-09T02:48:23.263000+00:00; extra amount charged 5883.02"
+    }
+  ],
+  "contradicting_evidence": [],
+  "unexplained_by_top_hypothesis": "The rule-based fallback does not weigh other causes (for example the deployment); review the computed facts.",
+  "confidence": {
+    "level": "low",
+    "stated_by_llm": "low",
+    "reasons": [
+      "LLM output unavailable or rejected; this is a deterministic fallback report -> at most low",
+      "metrics are missing for part of the incident window -> at most medium",
+      "a service clock is suspect, so cross-service timing is unreliable -> at most medium"
+    ]
+  },
+  "missing_information": [
+    "LLM analysis was unavailable; a human must review the computed facts."
+  ],
+  "recommended_actions": [
+    {
+      "action_type": "gather_more_data",
+      "description": "Review the computed facts and raw logs.",
+      "risk": "read_only",
+      "requires_approval": false,
+      "auto_execute": false,
+      "note": null
+    },
+    {
+      "action_type": "reconcile_with_provider",
+      "description": "Compare our charges with the provider report.",
+      "risk": "read_only",
+      "requires_approval": false,
+      "auto_execute": false,
+      "note": null
+    },
+    {
+      "action_type": "fix_idempotency_key_on_retry",
+      "description": "Reuse the original idempotency key on retries.",
+      "risk": "reversible",
+      "requires_approval": true,
+      "auto_execute": false,
+      "note": null
+    }
+  ],
+  "risks": [
+    "Costs time while customers may still be affected.",
+    "Provider data may lag or disagree with ours; treat it as one more source, not the truth.",
+    "A code change in the payment path needs tests; wrong key reuse could block valid retries.",
+    "If the top hypothesis is wrong, the actions above target the wrong cause."
+  ],
+  "meta": {
+    "llm_used": false,
+    "attempts": 0,
+    "llm_rejections": [],
+    "llm_error": "provider unavailable (simulated)"
+  }
+}

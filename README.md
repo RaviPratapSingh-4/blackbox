@@ -1,6 +1,8 @@
 
 # Black Box: incident investigation system
 
+Repository: https://github.com/RaviPratapSingh-4/blackbox
+
 Investigates "customers charged twice" using synthetic production data and returns an evidence-backed report. Details: [docs/architecture.md](docs/architecture.md), [DECISIONS.md](DECISIONS.md), [LIMITATIONS.md](LIMITATIONS.md).
 
 ## Setup (Windows PowerShell; Python 3.11+, Docker Desktop)

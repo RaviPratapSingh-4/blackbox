@@ -1,6 +1,6 @@
 {
   "root_cause": "payment-service retries a timed-out charge without the idempotency key; the provider had already processed attempt 1, so attempt 2 charges the customer again",
-  "contributor": "payment-service v2.14.0 cut the client timeout 10s -> 3s (provider p95 ~2.3s, unchanged), so timeouts, and therefore double charges, became about 8x more frequent",
+  "contributor": "payment-service v2.14.0 cut the client timeout 10s -> 3s (provider p95 ~2.3s, unchanged), so timeouts, and therefore double charges, became about 5x more frequent",
   "red_herrings": {
     "deployment_as_root_cause": "duplicate charges exist BEFORE the deploy",
     "provider_outage": "2026-10-10 09:00-10:00, timeouts but single charges only",
